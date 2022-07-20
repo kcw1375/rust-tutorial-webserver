@@ -42,9 +42,24 @@ impl ThreadPool {
     }
 }
 
+impl Drop for ThreadPool {
+    fn drop(&mut self) { 
+        // clean up the threads and finish their work for graceful shutdown
+
+        for worker in &mut self.workers {
+            println!("Shtting down worker {}", worker.id);
+
+            // move thread out of worker so that we can call join, which takes ownership
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
+    }
+}
+
 struct Worker {
     id: usize,
-    thread: thread::JoinHandle<()>,
+    thread: Option<thread::JoinHandle<()>>,
 }
 
 impl Worker {
@@ -61,6 +76,6 @@ impl Worker {
             job();
         });
 
-        Worker {id, thread}
+        Worker {id, thread: Some(thread)}
     }
 }
