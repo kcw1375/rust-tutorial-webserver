@@ -27,32 +27,20 @@ fn handle_connection(mut stream: TcpStream) {
     // for now we only respond if request is GET on root directory
     let get = b"GET / HTTP/1.1\r\n";
 
-    // determine the type of request
-    if buffer.starts_with(get) {
-        let status_line = "HTTP/1.1 200 OK";
-        let contents = fs::read_to_string("hello.html").unwrap();
-        let response = format!(
-            "{}\r\nContent-Length: {}\r\n\r\n{}",
-            status_line,
-            contents.len(),
-            contents
-        );
-
-        stream.write(response.as_bytes()).unwrap();
-        stream.flush().unwrap();
+    let (status_line, filename) = if buffer.starts_with(get) {
+        ("HTTP/1.1 200 OK", "hello.html")
     } else {
-        // for now, simply ignore and return 404
-        let status_line = "HTTP/1.1 404 NOT FOUND";
-        let contents = fs::read_to_string("404.html").unwrap();
+        ("HTTP/1.1 404 NOT FOUND", "404.html")
+    };
+    let contents = fs::read_to_string(filename).unwrap();
 
-        let response = format!(
-            "{}\r\nContent-Length: {}\r\n\r\n{}",
-            status_line,
-            contents.len(),
-            contents
-        );
+    let response = format!(
+        "{}\r\nContent-Length: {}\r\n\r\n{}",
+        status_line,
+        contents.len(),
+        contents
+    );
 
-        stream.write(response.as_bytes()).unwrap();
-        stream.flush().unwrap();
-    }
+    stream.write(response.as_bytes()).unwrap();
+    stream.flush().unwrap();
 }
